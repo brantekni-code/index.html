@@ -146,8 +146,7 @@
     </div>
 
     <script>
-        // URL del Web App de Google Apps Script suministrado
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwcmIBnOQ5xK7ybF4-RvJd60NDYSyF9twEvqR96XtSEuVAllz4ujwd-BpWy0xIpp0Un/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz_sQFxbHAHG9alUG7Sc6DBVYELLkzKuvpopf9H1wtLis0Lu0iMLPwFq1xhiHmzrQBk/exec";
 
         const mapaAreas = [
             { key: "servicioMedico", titulo: "SERVICIO MEDICO", radio: "Canal de radio 5" },
@@ -191,18 +190,7 @@
                 });
             });
             
-            // Verificación de ambiente para evitar fallas cross-origin
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(cargarDatosEnFormulario)
-                    .withFailureHandler(err => {
-                        console.error("Fallo nativo, intentando Fetch fallback...", err);
-                        cargarDatosPorFetch();
-                    })
-                    .obtenerDatosSheet();
-            } else {
-                cargarDatosPorFetch();
-            }
+            cargarDatosPorFetch();
         }
 
         function cargarDatosPorFetch() {
@@ -289,24 +277,21 @@
             const finFallo = function(err) {
                 btn.disabled = false;
                 btn.innerText = "☁️ Guardar Cambios en la Nube";
-                alert("Error crítico al subir a la nube: " + err);
+                alert("Error al interactuar con el servidor: " + err);
             };
 
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(finExito)
-                    .withFailureHandler(finFallo)
-                    .guardarDatosSheet(paqueteCompleto);
-            } else {
-                fetch(WEB_APP_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(paqueteCompleto)
-                })
-                .then(() => finExito("Datos enviados a la base central de Google Sheets con éxito."))
-                .catch(err => finFallo(err));
-            }
+            // Enviamos los datos directamente usando POST con texto plano para evitar pre-flights de CORS complejos
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(paqueteCompleto)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.result === "success") finExito("¡Guardado en la nube con éxito!");
+                else finFallo(res.error);
+            })
+            .catch(err => finFallo(err));
         }
 
         function switchTab(tabName) {
