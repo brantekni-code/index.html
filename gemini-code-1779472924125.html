@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura de Roles de Personal - Fin de Semana</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --border-color: #000000; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f5f7fa; color: #333; }
+        h1 { text-align: center; text-transform: uppercase; font-size: 24px; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 25px; font-size: 14px; }
+        
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border: 2px solid var(--border-color); background: #fff; border-radius: 5px; }
+        .tab-btn.active { background: #000; color: #fff; }
+        
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .form-container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .date-row { margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; background: #eee; padding: 10px; border-radius: 5px; }
+        .date-row label { font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .date-row input { padding: 5px; width: 220px; border: 1px solid #aaa; border-radius: 4px; font-weight: bold; }
+
+        .day-section-title { background: #2c3e50; color: white; text-align: center; padding: 10px; margin: 25px 0 15px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
+        
+        .capture-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .capture-table th { background: #4F81BD; color: #fff; border: 1px solid #ccc; padding: 10px; font-size: 13px; text-align: center; }
+        .capture-table td { border: 1px solid #ddd; padding: 8px; vertical-align: middle; }
+        .capture-table tr:nth-child(even) { background-color: #fafafa; }
+        
+        .area-label-cell { font-weight: bold; font-size: 13px; color: #111; width: 25%; }
+        .radio-label-cell { font-size: 12px; color: #555; width: 15%; text-align: center; font-style: italic; }
+        
+        .capture-table input { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #bbb; border-radius: 4px; font-size: 13px; }
+        .capture-table input:focus { border-color: #007bff; outline: none; background: #f7faff; }
+
+        .action-buttons-container { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
+        .btn-action { padding: 14px 28px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn-save-cloud { background-color: #007bff; color: white; }
+        .btn-save-cloud:hover { background-color: #0056b3; }
+        .btn-generate { background-color: #28a745; color: white; }
+        .btn-generate:hover { background-color: #218838; }
+
+        .status-message { text-align: center; font-weight: bold; color: #28a745; margin-top: 10px; font-size: 15px; }
+
+        .print-actions { text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px; }
+        .btn-print { padding: 11px 20px; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .btn-excel { background: #217346; } 
+        .btn-excel:hover { background: #1e663e; }
+        
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .day-column { border: 4px solid var(--border-color); padding: 10px; background: #fff; }
+        .day-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; padding: 8px 0; border-bottom: 4px solid var(--border-color); margin-bottom: 15px; background-color: #f0f0f0; }
+        .blocks-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .area-card { border: 2px solid var(--border-color); background: #fff; display: flex; flex-direction: column; }
+        .area-header { border-bottom: 2px solid var(--border-color); padding: 6px; text-align: center; font-weight: bold; font-size: 12px; background-color: #fff; text-transform: uppercase; }
+        .radio-tag { display: block; font-size: 11px; font-weight: normal; color: #333; margin-top: 2px; text-transform: none; }
+        .area-body { padding: 8px; font-size: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .slot { margin-bottom: 6px; line-height: 1.3; border-bottom: 1px dashed #ddd; padding-bottom: 4px; }
+        .slot:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+        .name-text { font-weight: bold; color: #111; display: block; }
+        .schedule-text { font-size: 11px; color: #555; font-style: italic; display: block; margin-top: 1px; }
+
+        @media print {
+            .tabs, .form-container, .print-actions { display: none !important; }
+            body { margin: 0; background-color: #fff; }
+            .main-grid { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Estructura de Roles de Personal</h1>
+    <div class="subtitle">Módulo con Horarios Individuales Integrados por Operador</div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('captura')">Panel de Captura (Supervisores)</button>
+        <button class="tab-btn" id="tab-vista-btn" onclick="switchTab('vista')">Vista de Impresión e Informe</button>
+    </div>
+
+    <div id="panel-captura" class="panel active">
+        <div class="form-container">
+            <div class="date-row">
+                <label>Fecha del Sábado: <input type="text" id="input-fecha-sab" value="SÁBADO 16 DE MAYO 2026"></label>
+                <label>Fecha del Domingo: <input type="text" id="input-fecha-dom" value="DOMINGO 17 DE MAYO 2026"></label>
+            </div>
+            
+            <div id="loading-status" style="text-align:center; font-weight:bold; color:#007bff; margin:10px 0;">🔄 Sincronizando con Google Sheets Cloud Base...</div>
+            <div id="msg-status" class="status-message"></div>
+
+            <div class="day-section-title">Roles para el Sábado</div>
+            <table class="capture-table">
+                <thead>
+                    <tr>
+                        <th>ÁREA / DEPARTAMENTO</th>
+                        <th>CANAL RADIO</th>
+                        <th>PERSONA 1 / HORARIO</th>
+                        <th>PERSONA 2 / HORARIO</th>
+                        <th>PERSONA 3 / HORARIO</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-sabado"></tbody>
+            </table>
+
+            <div class="day-section-title">Roles para el Domingo</div>
+            <table class="capture-table">
+                <thead>
+                    <tr>
+                        <th>ÁREA / DEPARTAMENTO</th>
+                        <th>CANAL RADIO</th>
+                        <th>PERSONA 1 / HORARIO</th>
+                        <th>PERSONA 2 / HORARIO</th>
+                        <th>PERSONA 3 / HORARIO</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-domingo"></tbody>
+            </table>
+
+            <div class="action-buttons-container">
+                <button class="btn-action btn-save-cloud" onclick="guardarHaciaNube()">☁️ Guardar Cambios en la Nube</button>
+                <button class="btn-action btn-generate" onclick="procesarYMostrar()">Generar Tablas de Impresión</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="panel-vista" class="panel">
+        <div class="print-actions">
+            <button class="btn-print btn-excel" onclick="exportarAExcel()">💾 Descargar Reporte en Excel (.xlsx)</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimir Tablas Visuales</button>
+            <button class="btn-print" style="background:#6c757d;" onclick="switchTab('captura')">✏️ Regresar a Modificar</button>
+        </div>
+
+        <div class="main-grid">
+            <div class="day-column">
+                <div class="day-title" id="titulo-sabado"></div>
+                <div class="blocks-container" id="grid-sabado"></div>
+            </div>
+            <div class="day-column">
+                <div class="day-title" id="titulo-domingo"></div>
+                <div class="blocks-container" id="grid-domingo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL del Web App de Google Apps Script suministrado
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxv5jXR5RAOz_9H1_ywqCEDZkFpH88xZeGgDH_20Hi4Ba1ohV5VjFrNM95ZgPL9MVk6/exec";
+
+        const mapaAreas = [
+            { key: "servicioMedico", titulo: "SERVICIO MEDICO", radio: "Canal de radio 5" },
+            { key: "seguridadIndustrial", titulo: "SEGURIDAD INDUSTRIAL", radio: "Canal de radio 5" },
+            { key: "mecanizado", titulo: "MECANIZADO", radio: "Canal de radio 16" },
+            { key: "inyeccion", titulo: "INYECCIÓN", radio: "Canal de radio 8" },
+            { key: "moldesInyeccion", titulo: "MOLDES INYECCIÓN", radio: "Canal de radio 8" },
+            { key: "manttoInyeccion", titulo: "MANTTO. INYECCIÓN", radio: "Canal de radio 8" },
+            { key: "manttoServicios", titulo: "MANTTO. SERVICIOS", radio: "Canal de radio 9" },
+            { key: "termoformado", titulo: "TERMOFORMADO", radio: "Canal de radio 12" },
+            { key: "manttoTermoformado", titulo: "MANTTO TERMOFORMADO", radio: "Canal de radio 12" },
+            { key: "moldesTermoformado", titulo: "MOLDES TERMOFORMADO", radio: "Canal de radio 12" },
+            { key: "altaBarrera", titulo: "ALTA BARRERA/DIPTUBE", radio: "CANAL DE RADIO 7" },
+            { key: "manttoAltaBarrera", titulo: "MANTTO. ALTA BARRERA", radio: "CANAL DE RADIO 7" },
+            { key: "enmangado", titulo: "ENMANGADO", radio: "CANAL DE RADIO 6" },
+            { key: "impresion", titulo: "IMPRESIÓN", radio: "CANAL DE RADIO 6" },
+            { key: "manttoImpresion", titulo: "MANTTO. IMPRESIÓN", radio: "CANAL DE RADIO 13" },
+            { key: "amp", titulo: "AMP", radio: "CANAL DE RADIO 4" },
+            { key: "manttoPpm2", titulo: "MANTTO PPM2", radio: "CANAL DE RADIO 11" },
+            { key: "ppm2Produccion", titulo: "PPM2 PRODUCCIÓN", radio: "CANAL DE RADIO 10" },
+            { key: "apt", titulo: "APT", radio: "CANAL DE RADIO 4" },
+            { key: "vigilancia", titulo: "VIGILANCIA", radio: "CANAL DE RADIO 1" },
+            { key: "refacciones", titulo: "REFACCIONES", radio: "CANAL DE RADIO 4" }
+        ];
+
+        function construirTablasCaptura() {
+            ["sabado", "domingo"].forEach(dia => {
+                const tbody = document.getElementById(`tbody-${dia}`);
+                tbody.innerHTML = "";
+
+                mapaAreas.forEach(area => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td class="area-label-cell">${area.titulo}</td>
+                        <td class="radio-label-cell">${area.radio}</td>
+                        <td><input type="text" id="p1-${dia}-${area.key}" placeholder="Nombre (Horario)"></td>
+                        <td><input type="text" id="p2-${dia}-${area.key}" placeholder="Nombre (Horario)"></td>
+                        <td><input type="text" id="p3-${dia}-${area.key}" placeholder="Nombre (Horario)"></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+            
+            // Verificación de ambiente para evitar fallas cross-origin
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(cargarDatosEnFormulario)
+                    .withFailureHandler(err => {
+                        console.error("Fallo nativo, intentando Fetch fallback...", err);
+                        cargarDatosPorFetch();
+                    })
+                    .obtenerDatosSheet();
+            } else {
+                cargarDatosPorFetch();
+            }
+        }
+
+        function cargarDatosPorFetch() {
+            fetch(`${WEB_APP_URL}?action=obtener`)
+                .then(res => res.json())
+                .then(datosNube => {
+                    cargarDatosEnFormulario(datosNube);
+                })
+                .catch(err => {
+                    document.getElementById("loading-status").style.textTransform = "none";
+                    document.getElementById("loading-status").style.color = "#bb8305";
+                    document.getElementById("loading-status").innerText = "⚠️ Nota: Esperando primer guardado o carga inicial de datos desde la nube.";
+                    console.warn("Base de datos vacía o carga remota pendiente: ", err);
+                });
+        }
+
+        function cargarDatosEnFormulario(datosNube) {
+            document.getElementById("loading-status").style.display = "none";
+            if (!datosNube || Object.keys(datosNube).length === 0) return;
+
+            ["sabado", "domingo"].forEach(dia => {
+                if (!datosNube[dia]) return;
+                mapaAreas.forEach(area => {
+                    const match = datosNube[dia][area.key];
+                    if (match) {
+                        document.getElementById(`p1-${dia}-${area.key}`).value = (match.persona1 === "N/A" || !match.persona1) ? "" : match.persona1;
+                        document.getElementById(`p2-${dia}-${area.key}`).value = (match.persona2 === "N/A" || !match.persona2) ? "" : match.persona2;
+                        document.getElementById(`p3-${dia}-${area.key}`).value = (match.persona3 === "N/A" || !match.persona3) ? "" : match.persona3;
+                    }
+                });
+            });
+        }
+
+        function desglosarTextoHorario(textoCompleto) {
+            if (!textoCompleto || textoCompleto.trim() === "" || textoCompleto === "N/A") {
+                return { nombre: "N/A", horario: "" };
+            }
+            const regExpParentesis = /(.*?)\((.*?)\)/;
+            const match = textoCompleto.match(regExpParentesis);
+            if (match && match.length >= 3) {
+                return { nombre: match[1].trim(), horario: match[2].trim() };
+            }
+            if (textoCompleto.includes(" - ")) {
+                const partes = textoCompleto.split(" - ");
+                return { nombre: partes[0].trim(), horario: partes[1].trim() };
+            }
+            return { nombre: textoCompleto.trim(), horario: "" };
+        }
+
+        function guardarHaciaNube() {
+            const btn = document.querySelector(".btn-save-cloud");
+            btn.disabled = true;
+            btn.innerText = "⏳ Sincronizando...";
+
+            let paqueteCompleto = [];
+
+            ["sabado", "domingo"].forEach(dia => {
+                mapaAreas.forEach(area => {
+                    const p1 = document.getElementById(`p1-${dia}-${area.key}`).value.trim();
+                    const p2 = document.getElementById(`p2-${dia}-${area.key}`).value.trim();
+                    const p3 = document.getElementById(`p3-${dia}-${area.key}`).value.trim();
+
+                    paqueteCompleto.push({
+                        dia: dia,
+                        areaKey: area.key,
+                        areaTitulo: area.titulo,
+                        radio: area.radio,
+                        persona1: p1 || "N/A",
+                        persona2: p2 || "N/A",
+                        persona3: p3 || "N/A"
+                    });
+                });
+            });
+
+            const finExito = function(msg) {
+                btn.disabled = false;
+                btn.innerText = "☁️ Guardar Cambios en la Nube";
+                const statusDiv = document.getElementById("msg-status");
+                statusDiv.style.color = "#28a745";
+                statusDiv.innerText = "✅ " + (msg || "Sincronizado correctamente con Google Sheets.");
+                setTimeout(() => statusDiv.innerText = "", 5000);
+            };
+
+            const finFallo = function(err) {
+                btn.disabled = false;
+                btn.innerText = "☁️ Guardar Cambios en la Nube";
+                alert("Error crítico al subir a la nube: " + err);
+            };
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(finExito)
+                    .withFailureHandler(finFallo)
+                    .guardarDatosSheet(paqueteCompleto);
+            } else {
+                fetch(WEB_APP_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(paqueteCompleto)
+                })
+                .then(() => finExito("Datos enviados a la base central de Google Sheets con éxito."))
+                .catch(err => finFallo(err));
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            
+            if(tabName === 'captura') {
+                document.querySelector(".tabs button:nth-child(1)").classList.add('active');
+                document.getElementById("panel-captura").classList.add('active');
+            } else {
+                document.querySelector(".tabs button:nth-child(2)").classList.add('active');
+                document.getElementById("panel-vista").classList.add('active');
+            }
+        }
+
+        function procesarYMostrar() {
+            document.getElementById("titulo-sabado").innerText = document.getElementById("input-fecha-sab").value;
+            document.getElementById("titulo-domingo").innerText = document.getElementById("input-fecha-dom").value;
+
+            ["sabado", "domingo"].forEach(dia => {
+                const contenedorGrid = document.getElementById(`grid-${dia}`);
+                contenedorGrid.innerHTML = "";
+
+                mapaAreas.forEach(area => {
+                    const p1Raw = document.getElementById(`p1-${dia}-${area.key}`).value.trim();
+                    const p2Raw = document.getElementById(`p2-${dia}-${area.key}`).value.trim();
+                    const p3Raw = document.getElementById(`p3-${dia}-${area.key}`).value.trim();
+
+                    let cuerpoHTML = "";
+                    const rawArray = [p1Raw, p2Raw, p3Raw];
+                    const tieneDatos = rawArray.some(n => n !== "");
+
+                    if (tieneDatos) {
+                        rawArray.forEach((rawText, index) => {
+                            if (rawText !== "") {
+                                const desglose = desglosarTextoHorario(rawText);
+                                let horarioHTML = desglose.horario !== "" ? `<span class="schedule-text">⏱️ ${desglose.horario}</span>` : "";
+                                cuerpoHTML += `
+                                    <div class="slot">
+                                        ${index + 1}° <span class="name-text">${desglose.nombre}</span>
+                                        ${horarioHTML}
+                                    </div>`;
+                            } else {
+                                cuerpoHTML += `<div class="slot">${index + 1}° <span class="name-text" style="color:#bbb;">N/A</span></div>`;
+                            }
+                        });
+                    } else {
+                        cuerpoHTML = `<div class="slot" style="text-align:center; color:#999; padding: 10px 0;"><span class="name-text">N/A</span></div>`;
+                    }
+
+                    const tarjeta = document.createElement("div");
+                    tarjeta.className = "area-card";
+                    tarjeta.innerHTML = `
+                        <div class="area-header">${area.titulo}<span class="radio-tag">${area.radio}</span></div>
+                        <div class="area-body">${cuerpoHTML}</div>
+                    `;
+                    contenedorGrid.appendChild(tarjeta);
+                });
+            });
+
+            switchTab('vista');
+        }
+
+        function exportarAExcel() {
+            const fechaSab = document.getElementById("input-fecha-sab").value;
+            const fechaDom = document.getElementById("input-fecha-dom").value;
+            
+            const filasExcel = [
+                [`SÁBADO: ${fechaSab}`],
+                ["ÁREA / DEPARTAMENTO", "RADIO", "PERSONA 1", "PERSONA 2", "PERSONA 3"]
+            ];
+
+            mapaAreas.forEach(area => {
+                const p1 = document.getElementById(`p1-sabado-${area.key}`).value.trim() || "N/A";
+                const p2 = document.getElementById(`p2-sabado-${area.key}`).value.trim() || "N/A";
+                const p3 = document.getElementById(`p3-sabado-${area.key}`).value.trim() || "N/A";
+                filasExcel.push([area.titulo, area.radio, p1, p2, p3]);
+            });
+
+            filasExcel.push([]);
+            filasExcel.push([`DOMINGO: ${fechaDom}`]);
+            filasExcel.push(["ÁREA / DEPARTAMENTO", "RADIO", "PERSONA 1", "PERSONA 2", "PERSONA 3"]);
+
+            mapaAreas.forEach(area => {
+                const p1 = document.getElementById(`p1-domingo-${area.key}`).value.trim() || "N/A";
+                const p2 = document.getElementById(`p2-domingo-${area.key}`).value.trim() || "N/A";
+                const p3 = document.getElementById(`p3-domingo-${area.key}`).value.trim() || "N/A";
+                filasExcel.push([area.titulo, area.radio, p1, p2, p3]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(filasExcel);
+            ws['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 35 }, { wch: 35 }, { wch: 35 }];
+            XLSX.utils.book_append_sheet(wb, ws, "Roles Fin de Semana");
+            XLSX.writeFile(wb, "Roles_Fin_De_Semana_Concentrado.xlsx");
+        }
+
+        window.onload = construirTablasCaptura;
+    </script>
+</body>
+</html>
