@@ -736,7 +736,49 @@
     }
 
     // ── PROCESAR Y MOSTRAR VISTA ──
+    // Primero carga la nube para tener todos los registros, luego genera la vista.
     function procesarYMostrar() {
+        const btn = document.querySelector(".btn-generate");
+        btn.disabled = true;
+        btn.innerText = "⏳ Cargando datos...";
+
+        fetch(`${WEB_APP_URL}?action=obtener`)
+            .then(res => res.json())
+            .then(datosNube => {
+                // Mezclar datos de la nube con lo que el usuario tiene en pantalla.
+                // La nube tiene prioridad para áreas que otros registraron;
+                // lo que el usuario capturó localmente se respeta si la nube no lo tiene.
+                if (datosNube && Object.keys(datosNube).length > 0) {
+                    ["sabado","domingo"].forEach(dia => {
+                        if (!datosNube[dia]) return;
+                        mapaAreas.forEach(area => {
+                            const match = datosNube[dia][area.key];
+                            if (match) {
+                                ["persona1","persona2","persona3"].forEach((p, i) => {
+                                    const inputEl = document.getElementById(`p${i+1}-${dia}-${area.key}`);
+                                    const val = match[p];
+                                    // Solo rellenar si el campo local está vacío
+                                    if (!inputEl.value.trim()) {
+                                        inputEl.value = (val === "N/A" || !val) ? "" : val;
+                                    }
+                                });
+                            }
+                        });
+                    });
+                }
+                generarVista();
+            })
+            .catch(() => {
+                // Si no hay conexión, genera con lo que hay localmente
+                generarVista();
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "📊 Generar Tablas de Impresión";
+            });
+    }
+
+    function generarVista() {
         document.getElementById("titulo-sabado").innerText = document.getElementById("input-fecha-sab").value;
         document.getElementById("titulo-domingo").innerText = document.getElementById("input-fecha-dom").value;
 
