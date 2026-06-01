@@ -210,6 +210,7 @@
         .btn-action:active { transform: scale(.97); }
 
         .btn-save-cloud { background: var(--blue); color: #fff; }
+        .btn-load-cloud { background: #7c3aed; color: #fff; }
         .btn-generate { background: var(--green); color: #fff; }
 
         /* ─── PRINT ACTIONS ─── */
@@ -501,7 +502,7 @@
             </label>
         </div>
 
-        <div id="loading-status">🔄 Sincronizando con la nube...</div>
+        <div id="loading-status" style="display:none;">🔄 Cargando desde la nube...</div>
         <div id="msg-status" class="status-message"></div>
 
         <div class="day-section-title">📋 Roles para el Sábado</div>
@@ -537,6 +538,7 @@
         </div>
 
         <div class="action-buttons-container">
+            <button class="btn-action btn-load-cloud" onclick="cargarDesdeNube()">🔄 Cargar Datos desde la Nube</button>
             <button class="btn-action btn-save-cloud" onclick="guardarHaciaNube()">☁️ Guardar Cambios en la Nube</button>
             <button class="btn-action btn-generate" onclick="procesarYMostrar()">📊 Generar Tablas de Impresión</button>
         </div>
@@ -619,18 +621,35 @@
                 tbody.appendChild(tr);
             });
         });
-        cargarDatosPorFetch();
+        // Ya NO se carga automáticamente desde la nube al abrir.
+        // El usuario debe presionar "Cargar Datos desde la Nube" manualmente.
     }
 
-    // ── CARGA DESDE NUBE ──
-    function cargarDatosPorFetch() {
+    // ── CARGA MANUAL DESDE NUBE ──
+    function cargarDesdeNube() {
+        const statusEl = document.getElementById("loading-status");
+        const btn = document.querySelector(".btn-load-cloud");
+        statusEl.style.display = "block";
+        statusEl.style.color = "var(--blue)";
+        statusEl.innerText = "🔄 Cargando desde la nube...";
+        btn.disabled = true;
+        btn.innerText = "⏳ Cargando...";
+
         fetch(`${WEB_APP_URL}?action=obtener`)
             .then(res => res.json())
-            .then(datosNube => cargarDatosEnFormulario(datosNube))
+            .then(datosNube => {
+                cargarDatosEnFormulario(datosNube);
+                statusEl.style.color = "var(--green)";
+                statusEl.innerText = "✅ Datos cargados correctamente.";
+                setTimeout(() => { statusEl.style.display = "none"; }, 3000);
+            })
             .catch(err => {
-                const el = document.getElementById("loading-status");
-                el.style.color = "#b45309";
-                el.innerText = "⚠️ Esperando primer guardado o carga inicial.";
+                statusEl.style.color = "#b45309";
+                statusEl.innerText = "⚠️ No se pudo conectar con la nube. Revisa tu conexión.";
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "🔄 Cargar Datos desde la Nube";
             });
     }
 
@@ -653,6 +672,8 @@
     }
 
     // ── GUARDAR EN NUBE ──
+    // Solo se mandan las áreas que tienen al menos un dato capturado.
+    // Así dos personas pueden guardar al mismo tiempo sin pisarse.
     function guardarHaciaNube() {
         const btn = document.querySelector(".btn-save-cloud");
         btn.disabled = true;
@@ -664,10 +685,20 @@
                 const p1 = document.getElementById(`p1-${dia}-${area.key}`).value.trim();
                 const p2 = document.getElementById(`p2-${dia}-${area.key}`).value.trim();
                 const p3 = document.getElementById(`p3-${dia}-${area.key}`).value.trim();
-                paquete.push({ dia, areaKey: area.key, areaTitulo: area.titulo, radio: area.radio,
-                    persona1: p1||"N/A", persona2: p2||"N/A", persona3: p3||"N/A" });
+                // Solo incluir áreas con al menos un nombre capturado
+                if (p1 || p2 || p3) {
+                    paquete.push({ dia, areaKey: area.key, areaTitulo: area.titulo, radio: area.radio,
+                        persona1: p1||"N/A", persona2: p2||"N/A", persona3: p3||"N/A" });
+                }
             });
         });
+
+        if (paquete.length === 0) {
+            btn.disabled = false;
+            btn.innerText = "☁️ Guardar Cambios en la Nube";
+            alert("No hay datos capturados para guardar.");
+            return;
+        }
 
         fetch(WEB_APP_URL, {
             method: "POST",
@@ -687,8 +718,7 @@
         .catch(err => {
             btn.disabled = false;
             btn.innerText = "☁️ Guardar Cambios en la Nube";
-            // En caso de error de red igual mostramos feedback local
-            mostrarAnimacionExito();
+            alert("⚠️ Error de conexión. No se guardaron los datos. Verifica tu red e inténtalo de nuevo.");
         });
     }
 
