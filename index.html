@@ -593,8 +593,7 @@
         { key: "moldesTermoformado",  titulo: "MOLDES TERMOFORMADO",     radio: "Canal 12" },
         { key: "altaBarrera",         titulo: "ALTA BARRERA/DIPTUBE",    radio: "Canal 7" },
         { key: "manttoAltaBarrera",   titulo: "MANTTO. ALTA BARRERA",    radio: "Canal 7" },
-        { key: "enmangado",           titulo: "ENMANGADO",               radio: "Canal 6" },
-        { key: "impresion",           titulo: "IMPRESIÓN",               radio: "Canal 6" },
+        { key: "enmangadoImpresion",  titulo: "ENMANGADO/IMPRESIÓN",     radio: "Canal 6" },
         { key: "manttoImpresion",     titulo: "MANTTO. IMPRESIÓN",       radio: "Canal 13" },
         { key: "amp",                 titulo: "AMP",                     radio: "Canal 4" },
         { key: "manttoPpm2",          titulo: "MANTTO PPM2",             radio: "Canal 11" },
@@ -621,8 +620,6 @@
                 tbody.appendChild(tr);
             });
         });
-        // Ya NO se carga automáticamente desde la nube al abrir.
-        // El usuario debe presionar "Cargar Datos desde la Nube" manualmente.
     }
 
     // ── CARGA MANUAL DESDE NUBE ──
@@ -672,8 +669,6 @@
     }
 
     // ── GUARDAR EN NUBE ──
-    // Solo se mandan las áreas que tienen al menos un dato capturado.
-    // Así dos personas pueden guardar al mismo tiempo sin pisarse.
     function guardarHaciaNube() {
         const btn = document.querySelector(".btn-save-cloud");
         btn.disabled = true;
@@ -685,7 +680,6 @@
                 const p1 = document.getElementById(`p1-${dia}-${area.key}`).value.trim();
                 const p2 = document.getElementById(`p2-${dia}-${area.key}`).value.trim();
                 const p3 = document.getElementById(`p3-${dia}-${area.key}`).value.trim();
-                // Solo incluir áreas con al menos un nombre capturado
                 if (p1 || p2 || p3) {
                     paquete.push({ dia, areaKey: area.key, areaTitulo: area.titulo, radio: area.radio,
                         persona1: p1||"N/A", persona2: p2||"N/A", persona3: p3||"N/A" });
@@ -722,19 +716,13 @@
         });
     }
 
-    // ── ANIMACIÓN + VIBRACIÓN ──
     function mostrarAnimacionExito() {
-        // Doble vibración
         if (navigator.vibrate) {
             navigator.vibrate([150, 80, 150]);
         }
-
         const overlay = document.getElementById("success-overlay");
         overlay.classList.add("show");
-
-        setTimeout(() => {
-            overlay.classList.remove("show");
-        }, 2800);
+        setTimeout(() => { overlay.classList.remove("show"); }, 2800);
     }
 
     // ── PROCESAR Y MOSTRAR VISTA ──
@@ -795,7 +783,6 @@
         return { nombre: texto.trim(), horario: "" };
     }
 
-    // ── TABS ──
     function switchTab(tabName) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -816,26 +803,21 @@
         document.querySelectorAll('.print-day-tab')[idx].classList.add('active');
     }
 
-    // ── IMPRIMIR DÍA ESPECÍFICO ──
     function imprimirDia(dia) {
-        // Marcar cuál día es el print-target
         document.querySelectorAll('.day-view').forEach(d => d.classList.remove('print-target'));
         document.getElementById(`view-${dia}`).classList.add('print-target');
         window.print();
-        // Limpiar después
         setTimeout(() => {
             document.querySelectorAll('.day-view').forEach(d => d.classList.remove('print-target'));
         }, 1000);
     }
 
-    // ── EXPORTAR EXCEL ──
     function exportarAExcel() {
         const fechaSab = document.getElementById("input-fecha-sab").value;
         const fechaDom = document.getElementById("input-fecha-dom").value;
 
         const wb = XLSX.utils.book_new();
 
-        // Hoja Sábado
         const filasSab = [[`SÁBADO: ${fechaSab}`], ["ÁREA / DEPARTAMENTO","RADIO","PERSONA 1","PERSONA 2","PERSONA 3"]];
         mapaAreas.forEach(area => {
             filasSab.push([
@@ -849,7 +831,6 @@
         wsSab['!cols'] = [{ wch: 28 },{ wch: 12 },{ wch: 32 },{ wch: 32 },{ wch: 32 }];
         XLSX.utils.book_append_sheet(wb, wsSab, "Sábado");
 
-        // Hoja Domingo
         const filasDom = [[`DOMINGO: ${fechaDom}`], ["ÁREA / DEPARTAMENTO","RADIO","PERSONA 1","PERSONA 2","PERSONA 3"]];
         mapaAreas.forEach(area => {
             filasDom.push([
