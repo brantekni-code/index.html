@@ -448,16 +448,69 @@
             .tabs, .form-container, .print-actions, .print-day-tabs,
             #success-overlay, .no-print { display: none !important; }
 
-            body { margin: 0; background: #fff; padding: 0; }
+            body { margin: 0; background: #fff; padding: 0; font-size: 12pt; }
 
             .day-view { display: none !important; }
             .day-view.print-target { display: block !important; }
 
-            .day-column { border: 2px solid #000; page-break-inside: avoid; }
+            /* Ya no forzamos que todo el día quepa en una sola hoja:
+               dejamos que el contenido fluya a más páginas si hace falta,
+               así el texto puede imprimirse en un tamaño legible. */
+            .day-column {
+                border: 2px solid #000;
+                break-inside: auto;
+                page-break-inside: auto;
+                padding: 4mm;
+            }
 
-            .blocks-container { grid-template-columns: 1fr 1fr; }
+            .day-title {
+                font-size: 20pt !important;
+                padding: 10px;
+                margin-bottom: 8mm;
+            }
 
-            @page { size: A4 portrait; margin: 10mm; }
+            .blocks-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 4mm;
+            }
+
+            /* Cada tarjeta de área no se corta entre páginas */
+            .area-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border-width: 2px;
+            }
+
+            .area-header {
+                font-size: 13pt !important;
+                padding: 8px 10px;
+                line-height: 1.4;
+            }
+
+            .radio-tag {
+                font-size: 10pt !important;
+            }
+
+            .area-body {
+                font-size: 12.5pt !important;
+                padding: 10px;
+            }
+
+            .slot {
+                margin-bottom: 8px;
+                padding-bottom: 7px;
+                line-height: 1.5;
+            }
+
+            .name-text {
+                font-size: 12.5pt !important;
+            }
+
+            .schedule-text {
+                font-size: 11pt !important;
+            }
+
+            @page { size: A4 portrait; margin: 8mm; }
         }
     </style>
 </head>
